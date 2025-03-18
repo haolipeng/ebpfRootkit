@@ -12,4 +12,7 @@ struct event {
 #define MAX_ENTRIES 1024
 #define TASK_COMM_LEN 16
 
+#define PROG_01 1
+#define PROG_02 2
+
 #endif /* __COMMON_H */ 
