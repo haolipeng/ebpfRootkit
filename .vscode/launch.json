@@ -1,14 +1,13 @@
 {
     "version": "0.2.0",
     "configurations": [
-
-
         {
-            "type": "lldb-mi",
+            "type": "cppdbg",
             "request": "launch",
             "name": "ebpf Debug",
-            "target": "./rootkit",
-            "cwd": "${workspaceRoot}",
+            "program": "${workspaceFolder}/rootkit",
+            "args": [],
+            "cwd": "${workspaceFolder}",
             "valuesFormatting": "parseText"
         },
         {

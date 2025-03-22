@@ -1,11 +1,13 @@
 #ifndef __COMMON_H
 #define __COMMON_H
+#include <stdbool.h>
 
 // 定义事件结构体
 struct event {
     int pid;
     int uid;
     char comm[16];
+    bool success;
 };
 
 // 可以在这里添加其他共享的常量或结构体
