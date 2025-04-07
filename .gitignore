@@ -1,0 +1,21 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# CMake
+cmake-build-*/
+build/
+CMakeFiles/
+CMakeCache.txt
+
+# 编译产物
+*.o
+*.out
+rootkit
+.output
+
+# 日志文件
+*.log
+
